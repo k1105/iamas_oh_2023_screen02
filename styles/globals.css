@@ -17,6 +17,7 @@ body,
   user-select: none;
   overflow: hidden;
   background: #011960;
+  cursor: none;
 }
 
 #root {
