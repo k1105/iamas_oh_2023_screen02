@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import p5Types from "p5";
-import { MutableRefObject, useRef, Dispatch, SetStateAction } from "react";
+import { MutableRefObject, Dispatch, SetStateAction } from "react";
 import { Hand } from "@tensorflow-models/hand-pose-detection";
 import { getSmoothedHandpose } from "../lib/getSmoothedHandpose";
 import { updateHandposeHistory } from "../lib/updateHandposeHistory";
@@ -15,8 +15,6 @@ type Props = {
   scene: number;
 };
 
-const mainColor = 220;
-
 type Handpose = Keypoint[];
 
 const Sketch = dynamic(import("react-p5"), {
@@ -24,7 +22,7 @@ const Sketch = dynamic(import("react-p5"), {
   ssr: false,
 });
 
-export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
+export const InteractionKunoji = ({ handpose, scene, setScene }: Props) => {
   let handposeHistory: {
     left: Handpose[];
     right: Handpose[];
@@ -34,7 +32,8 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
     prev: false,
     at: 0,
   };
-
+  const r = 50;
+  const offset = 30;
   const fingerNames = [
     "thumb",
     "index finger",
@@ -42,7 +41,6 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
     "ring finger",
     "pinky",
   ];
-  const debugLog = useRef<{ label: string; value: any }[]>([]);
 
   const preload = (p5: p5Types) => {
     // 画像などのロードを行う
@@ -50,15 +48,13 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
 
   const setup = (p5: p5Types, canvasParentRef: Element) => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight).parent(canvasParentRef);
-    p5.stroke(mainColor);
-    p5.fill(mainColor);
+    p5.stroke(220);
+    p5.fill(255);
     p5.strokeWeight(10);
   };
 
   const draw = (p5: p5Types) => {
-    lost = updateLost(handpose.current, lost);
-    setScene(updateStyleIndex(lost, scene, 3));
-
+    p5.clear();
     const rawHands: {
       left: Handpose;
       right: Handpose;
@@ -69,16 +65,10 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
       right: Handpose;
     } = getSmoothedHandpose(rawHands, handposeHistory); //平滑化された手指の動きを取得する
 
-    // logとしてmonitorに表示する
-    debugLog.current = [];
-    for (const hand of handpose.current) {
-      debugLog.current.push({
-        label: hand.handedness + " accuracy",
-        value: hand.score,
-      });
-    }
+    lost = updateLost(handpose.current, lost);
+    setScene(updateStyleIndex(lost, scene, 3));
 
-    p5.clear(); // --
+    // --
     // <> pinky
     // <> ring
     // <> middle
@@ -87,47 +77,75 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
     // --
     // if one hand is detected, both side of organ is shrink / extend.
     // if two hands are detected, each side of organ changes according to each hand.
-    const r = 150; // <の長さ.
-    const offset = 60; // 左右の手指の出力位置の間隔
-    const scale = 1; // 指先と付け根の距離の入力値に対する、出力時に使うスケール比。
-    let start: number = 0;
-    let end: number = 0;
 
-    if (hands.left.length > 0 || hands.right.length > 0) {
-      //右手、左手のうちのどちらかが認識されていた場合
-      // 片方の手の動きをもう片方に複製する
+    let start;
+    let end;
+
+    if (hands.left.length + hands.right.length > 0) {
       if (hands.left.length == 0) {
         hands.left = hands.right;
       } else if (hands.right.length == 0) {
         hands.right = hands.left;
       }
 
-      p5.translate(window.innerWidth / 2, (2 * window.innerHeight) / 3);
+      [hands.left, hands.right].forEach((hand, index) => {
+        p5.push();
+        p5.translate(0, window.innerHeight / 2);
 
-      for (let n = 0; n < 5; n++) {
-        start = 4 * n + 1;
-        end = 4 * n + 4;
-
-        const left_d = (hands.left[end].y - hands.left[start].y) * scale;
-        const right_d = (hands.right[end].y - hands.right[start].y) * scale;
-
-        [left_d, right_d].forEach((d, index) => {
-          const sign = (-1) ** (1 - index); //正負の符号
-          p5.push();
-          p5.translate(sign * offset, 0);
-
-          if (r < Math.abs(d)) {
-            p5.line(0, 0, 0, -r);
-          } else if (d > 0) {
-            p5.line(0, 0, (sign * r) / 2, 0);
+        for (let n = 0; n < 5; n++) {
+          if (n === 0) {
+            start = 2;
           } else {
-            p5.line(0, 0, (sign * Math.sqrt(r ** 2 - d ** 2)) / 2, d / 2);
-            p5.line((sign * Math.sqrt(r ** 2 - d ** 2)) / 2, d / 2, 0, d);
+            start = 4 * n + 1;
+          }
+          end = 4 * n + 4;
+          p5.push();
+          p5.translate((window.innerWidth / 6) * (n + 1), 0);
+
+          p5.push();
+          const d = hand[end].y - hand[start].y;
+          if (index === 1) {
+            if (r < p5.abs(d)) {
+              p5.line(offset, 0, offset, -3 * r);
+            } else if (d > 0) {
+              p5.line(offset, 0, (3 * r) / 2, 0);
+            } else {
+              p5.line(
+                offset,
+                0,
+                offset + p5.sqrt(r ** 2 - d ** 2),
+                (3 * d) / 2
+              );
+              p5.line(
+                offset + p5.sqrt(r ** 2 - d ** 2),
+                (3 * d) / 2,
+                offset,
+                3 * d
+              );
+            }
+          } else if (d > 0) {
+            p5.line(-offset, 0, -(3 * r) / 2, 0);
+          } else {
+            if (r < p5.abs(d)) {
+              p5.line(-offset, 0, -offset, -3 * r);
+            } else {
+              p5.line(
+                -offset,
+                0,
+                -offset - p5.sqrt(r ** 2 - d ** 2),
+                (3 * d) / 2
+              );
+              p5.line(
+                -offset - p5.sqrt(r ** 2 - d ** 2),
+                (3 * d) / 2,
+                -offset,
+                3 * d
+              );
+            }
           }
 
-          //テキストの描画
           p5.push();
-          p5.translate(sign * 200, 0);
+          p5.translate(0, 50);
           p5.noStroke();
           p5.textAlign(p5.CENTER);
           p5.textSize(15);
@@ -135,30 +153,11 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
           p5.text(fingerNames[n], 0, 0);
           p5.pop();
           p5.pop();
-        });
-
-        //全体座標の回転と高さ方向へのtranslate
-        let tmp_l_d = 0;
-        let tmp_r_d = 0;
-
-        if (r < Math.abs(left_d)) {
-          tmp_l_d = -r;
-        } else if (left_d > 0) {
-          tmp_l_d = 0;
-        } else {
-          tmp_l_d = left_d;
-        }
-        if (r < Math.abs(right_d)) {
-          tmp_r_d = -r;
-        } else if (right_d > 0) {
-          tmp_r_d = 0;
-        } else {
-          tmp_r_d = right_d;
+          p5.pop();
         }
 
-        p5.translate(0, (tmp_l_d + tmp_r_d) / 2);
-        p5.rotate(-Math.atan2(tmp_l_d - tmp_r_d, 2 * offset));
-      }
+        p5.pop();
+      });
     }
   };
 

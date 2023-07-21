@@ -3,8 +3,9 @@ import "@tensorflow/tfjs";
 import * as handPoseDetection from "@tensorflow-models/hand-pose-detection";
 import Webcam from "react-webcam";
 import { ConsentForm } from "../sketch/ConsentForm";
-import { Interaction20 } from "../sketch/Interaction20";
+import { InteractionKunoji } from "../sketch/InteractionKunoji";
 import { InteractionPile } from "../sketch/InteractionPile";
+import { InteractionCircle } from "../sketch/InteractionCirle";
 import { PixelInput } from "@tensorflow-models/hand-pose-detection/dist/shared/calculators/interfaces/common_interfaces";
 import Head from "next/head";
 
@@ -17,8 +18,9 @@ export default function App() {
   const [scene, setScene] = useState<number>(0);
   const [consented, setConsented] = useState<boolean>(false);
   const headerTexts = [
-    { eng: "Interaction020", text: "界面を確かめる" },
-    { eng: "Interaction030", text: "積み重ねる" },
+    { eng: "Interaction-Unit", text: "くの字ユニット" },
+    { eng: "Interaction-Pile", text: "積み重ねる" },
+    { eng: "Interaction-Circle", text: "ぐるっと繋げる" },
   ];
 
   const lostCountRef = useRef(0);
@@ -106,7 +108,7 @@ export default function App() {
               } else {
                 if (scene == 0) {
                   return (
-                    <Interaction20
+                    <InteractionKunoji
                       handpose={predictionsRef}
                       scene={scene}
                       setScene={setScene}
@@ -115,6 +117,14 @@ export default function App() {
                 } else if (scene == 1) {
                   return (
                     <InteractionPile
+                      handpose={predictionsRef}
+                      scene={scene}
+                      setScene={setScene}
+                    />
+                  );
+                } else if (scene == 2) {
+                  return (
+                    <InteractionCircle
                       handpose={predictionsRef}
                       scene={scene}
                       setScene={setScene}
