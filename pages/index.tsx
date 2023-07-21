@@ -20,11 +20,10 @@ export default function App() {
     { eng: "Interaction020", text: "界面を確かめる" },
     { eng: "Interaction030", text: "積み重ねる" },
   ];
-  const timer = 120000;
 
   const lostCountRef = useRef(0);
   const sketchContainerRef = useRef<HTMLDivElement>(null);
-  // const timer = 120000;
+  const timer = 120000;
 
   const capture = useCallback(async () => {
     if (typeof webcamRef.current && modelRef.current) {

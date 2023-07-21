@@ -8,8 +8,10 @@ import { Keypoint } from "@tensorflow-models/hand-pose-detection";
 import { convertHandToHandpose } from "../lib/converter/convertHandToHandpose";
 import { dotHand } from "../lib/p5/dotHand";
 import { isFront } from "../lib/calculator/isFront";
-import { Monitor } from "../components/Monitor";
+// import { Monitor } from "../components/Monitor";
 import { detectThumbUpDown } from "../lib/calculator/detectThumbUpDown";
+import { convert3DKeypointsToHandpose } from "../lib/converter/convert3DKeypointsToHandpose";
+import { resizeHandpose } from "../lib/converter/resizeHandpose";
 
 type Props = {
   handpose: MutableRefObject<Hand[]>;
@@ -57,7 +59,10 @@ export const ConsentForm = ({ handpose, setConsented }: Props) => {
     const rawHands: {
       left: Handpose;
       right: Handpose;
-    } = convertHandToHandpose(handpose.current);
+    } = convert3DKeypointsToHandpose(handpose.current);
+    rawHands.left = resizeHandpose(rawHands.left, 1000);
+    rawHands.right = resizeHandpose(rawHands.right, 1000);
+
     handposeHistory = updateHandposeHistory(rawHands, handposeHistory); //handposeHistoryの更新
     const hands: {
       left: Handpose;
