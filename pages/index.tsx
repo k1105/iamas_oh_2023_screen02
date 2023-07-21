@@ -20,6 +20,7 @@ export default function App() {
     { eng: "Interaction020", text: "界面を確かめる" },
     { eng: "Interaction030", text: "積み重ねる" },
   ];
+  const timer = 120000;
 
   const lostCountRef = useRef(0);
   const sketchContainerRef = useRef<HTMLDivElement>(null);
@@ -75,7 +76,7 @@ export default function App() {
     load();
 
     setReady(true);
-    // setInterval("location.reload()", timer);
+    setInterval("location.reload()", timer);
   }, []);
 
   useEffect(() => {
