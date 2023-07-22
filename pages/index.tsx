@@ -8,6 +8,7 @@ import { InteractionPile } from "../sketch/InteractionPile";
 import { InteractionCircle } from "../sketch/InteractionCirle";
 import { PixelInput } from "@tensorflow-models/hand-pose-detection/dist/shared/calculators/interfaces/common_interfaces";
 import Head from "next/head";
+import { ScreenSaver } from "../sketch/ScreenSaver";
 
 export default function App() {
   const webcamRef = useRef<Webcam>(null);
@@ -17,6 +18,7 @@ export default function App() {
   const [ready, setReady] = useState<boolean>(false);
   const [scene, setScene] = useState<number>(0);
   const [consented, setConsented] = useState<boolean>(false);
+  const [lost, setLost] = useState<boolean>(true);
   const headerTexts = [
     { eng: "Interaction-Unit", text: "くの字ユニット" },
     { eng: "Interaction-Pile", text: "積み重ねる" },
@@ -43,6 +45,7 @@ export default function App() {
         ) {
           predictionsRef.current = predictions;
           lostCountRef.current = 0;
+          setLost(false);
         } else {
           lostCountRef.current++;
         }
@@ -50,8 +53,9 @@ export default function App() {
         if (lostCountRef.current > 5) {
           predictionsRef.current = [];
         }
-        if (lostCountRef.current > 100) {
+        if (lostCountRef.current > 200) {
           setConsented(false);
+          setLost(true);
         }
       }
     }
@@ -98,62 +102,70 @@ export default function App() {
         <>
           <div ref={sketchContainerRef}>
             {(() => {
-              if (!consented) {
-                return (
-                  <ConsentForm
-                    handpose={predictionsRef}
-                    setConsented={setConsented}
-                  />
-                );
+              if (lost) {
+                return <ScreenSaver />;
               } else {
-                if (scene == 0) {
+                if (!consented) {
                   return (
-                    <InteractionKunoji
+                    <ConsentForm
                       handpose={predictionsRef}
-                      scene={scene}
-                      setScene={setScene}
+                      setConsented={setConsented}
                     />
                   );
-                } else if (scene == 1) {
-                  return (
-                    <InteractionPile
-                      handpose={predictionsRef}
-                      scene={scene}
-                      setScene={setScene}
-                    />
-                  );
-                } else if (scene == 2) {
-                  return (
-                    <InteractionCircle
-                      handpose={predictionsRef}
-                      scene={scene}
-                      setScene={setScene}
-                    />
-                  );
+                } else {
+                  if (scene == 0) {
+                    return (
+                      <InteractionKunoji
+                        handpose={predictionsRef}
+                        scene={scene}
+                        setScene={setScene}
+                      />
+                    );
+                  } else if (scene == 1) {
+                    return (
+                      <InteractionPile
+                        handpose={predictionsRef}
+                        scene={scene}
+                        setScene={setScene}
+                      />
+                    );
+                  } else if (scene == 2) {
+                    return (
+                      <InteractionCircle
+                        handpose={predictionsRef}
+                        scene={scene}
+                        setScene={setScene}
+                      />
+                    );
+                  }
                 }
               }
             })()}
           </div>
         </>
       )}
-      <div style={{ position: "absolute", width: "300px", top: "30px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            paddingLeft: "1rem",
-            height: "2.5rem",
-          }}
-        >
-          <p style={{ fontWeight: "bold", lineHeight: "2rem" }}>
-            {consented ? headerTexts[scene].eng : "Concent Form"}
-          </p>
-          <p style={{ fontFamily: "monospace", fontSize: "1.1rem" }}>
-            {consented ? headerTexts[scene].text : "実験協力のおねがい"}
-          </p>
+      {lost ? (
+        <></>
+      ) : (
+        <div style={{ position: "absolute", width: "300px", top: "30px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              paddingLeft: "1rem",
+              height: "2.5rem",
+            }}
+          >
+            <p style={{ fontWeight: "bold", lineHeight: "2rem" }}>
+              {consented ? headerTexts[scene].eng : "Concent Form"}
+            </p>
+            <p style={{ fontFamily: "monospace", fontSize: "1.1rem" }}>
+              {consented ? headerTexts[scene].text : "実験協力のおねがい"}
+            </p>
+          </div>
+          <hr />
         </div>
-        <hr />
-      </div>
+      )}
       <div
         style={{
           position: "absolute",
