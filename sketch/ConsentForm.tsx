@@ -160,7 +160,7 @@ export const ConsentForm = ({ handpose, setConsented }: Props) => {
       (typeof isLeftApproved == "boolean" && isRightApproved == null) ||
       (typeof isRightApproved == "boolean" && isRightApproved == isLeftApproved)
     ) {
-      if (isRightApproved || isLeftApproved) {
+      if (isRightApproved == true || isLeftApproved == true) {
         isApproved = true;
       } else {
         isApproved = false;
