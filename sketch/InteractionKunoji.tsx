@@ -7,7 +7,7 @@ import { updateHandposeHistory } from "../lib/updateHandposeHistory";
 import { Keypoint } from "@tensorflow-models/hand-pose-detection";
 import { convertHandToHandpose } from "../lib/converter/convertHandToHandpose";
 import { updateLost } from "../lib/updateLost";
-import { updateStyleIndex } from "../lib/updateStyleIndex";
+import { circleIndicator } from "../lib/p5/circleIndicator";
 
 type Props = {
   handpose: MutableRefObject<Hand[]>;
@@ -41,6 +41,7 @@ export const InteractionKunoji = ({ handpose, scene, setScene }: Props) => {
     "ring finger",
     "pinky",
   ];
+  let detectedOnce = false;
 
   const preload = (p5: p5Types) => {
     // 画像などのロードを行う
@@ -65,18 +66,32 @@ export const InteractionKunoji = ({ handpose, scene, setScene }: Props) => {
       right: Handpose;
     } = getSmoothedHandpose(rawHands, handposeHistory); //平滑化された手指の動きを取得する
 
-    lost = updateLost(handpose.current, lost);
-    setScene(updateStyleIndex(lost, scene, 3));
+    /**
+     * handle lost and scene
+     **/
 
-    // --
-    // <> pinky
-    // <> ring
-    // <> middle
-    // <> index
-    // <> thumb
-    // --
-    // if one hand is detected, both side of organ is shrink / extend.
-    // if two hands are detected, each side of organ changes according to each hand.
+    if (handpose.current.length > 0) {
+      detectedOnce = true;
+    }
+    if (detectedOnce) {
+      lost = updateLost(handpose.current, lost);
+      if (lost.state) {
+        p5.push();
+        p5.translate(p5.width - 100, 100);
+        circleIndicator({
+          p5,
+          ratio: (new Date().getTime() - lost.at) / 2000,
+          text: "きりかわるまで",
+        });
+        p5.pop();
+        if ((new Date().getTime() - lost.at) / 2000 > 1) {
+          setScene((scene + 1) % 3);
+        }
+      }
+    }
+    /**
+     * handle lost and scene
+     **/
 
     let start;
     let end;
@@ -103,7 +118,7 @@ export const InteractionKunoji = ({ handpose, scene, setScene }: Props) => {
           p5.translate((window.innerWidth / 6) * (n + 1), 0);
 
           p5.push();
-          const d = hand[end].y - hand[start].y;
+          const d = (hand[end].y - hand[start].y) / 1.5;
           if (index === 1) {
             if (r < p5.abs(d)) {
               p5.line(offset, 0, offset, -3 * r);

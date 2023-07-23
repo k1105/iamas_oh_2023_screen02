@@ -11,6 +11,7 @@ import { getSmoothedHandpose } from "../lib/getSmoothedHandpose";
 import { updateHandposeHistory } from "../lib/updateHandposeHistory";
 import { updateLost } from "../lib/updateLost";
 import { updateStyleIndex } from "../lib/updateStyleIndex";
+import { circleIndicator } from "../lib/p5/circleIndicator";
 
 type Props = {
   handpose: MutableRefObject<Hand[]>;
@@ -52,6 +53,7 @@ export const InteractionCircle = ({ handpose, scene, setScene }: Props) => {
     prev: false,
     at: 0,
   };
+  let detectedOnce = false;
 
   let distanceListHistory: number[][] = [];
 
@@ -74,10 +76,34 @@ export const InteractionCircle = ({ handpose, scene, setScene }: Props) => {
     } = convertHandToHandpose(handpose.current); //平滑化されていない手指の動きを使用する
     updateHandposeHistory(rawHands, handposeHistory);
     const hands = getSmoothedHandpose(rawHands, handposeHistory);
-    lost = updateLost(handpose.current, lost);
-    setScene(updateStyleIndex(lost, scene, 3));
 
     p5.clear();
+    /**
+     * handle lost and scene
+     **/
+
+    if (handpose.current.length > 0) {
+      detectedOnce = true;
+    }
+    if (detectedOnce) {
+      lost = updateLost(handpose.current, lost);
+      if (lost.state) {
+        p5.push();
+        p5.translate(p5.width - 100, 100);
+        circleIndicator({
+          p5,
+          ratio: (new Date().getTime() - lost.at) / 2000,
+          text: "きりかわるまで",
+        });
+        p5.pop();
+        if ((new Date().getTime() - lost.at) / 2000 > 1) {
+          setScene((scene + 1) % 3);
+        }
+      }
+    }
+    /**
+     * handle lost and scene
+     **/
 
     // --
     // <> pinky

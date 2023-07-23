@@ -8,6 +8,7 @@ import { Keypoint } from "@tensorflow-models/hand-pose-detection";
 import { convertHandToHandpose } from "../lib/converter/convertHandToHandpose";
 import { updateLost } from "../lib/updateLost";
 import { updateStyleIndex } from "../lib/updateStyleIndex";
+import { circleIndicator } from "../lib/p5/circleIndicator";
 
 type Props = {
   handpose: MutableRefObject<Hand[]>;
@@ -44,6 +45,11 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
   ];
   const debugLog = useRef<{ label: string; value: any }[]>([]);
 
+  const r = 150; // <の長さ.
+  const offset = 60; // 左右の手指の出力位置の間隔
+  const scale = 1; // 指先と付け根の距離の入力値に対する、出力時に使うスケール比。
+  let detectedOnce = false;
+
   const preload = (p5: p5Types) => {
     // 画像などのロードを行う
   };
@@ -56,9 +62,6 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
   };
 
   const draw = (p5: p5Types) => {
-    lost = updateLost(handpose.current, lost);
-    setScene(updateStyleIndex(lost, scene, 3));
-
     const rawHands: {
       left: Handpose;
       right: Handpose;
@@ -78,20 +81,36 @@ export const InteractionPile = ({ handpose, scene, setScene }: Props) => {
       });
     }
 
-    p5.clear(); // --
-    // <> pinky
-    // <> ring
-    // <> middle
-    // <> index
-    // <> thumb
-    // --
-    // if one hand is detected, both side of organ is shrink / extend.
-    // if two hands are detected, each side of organ changes according to each hand.
-    const r = 150; // <の長さ.
-    const offset = 60; // 左右の手指の出力位置の間隔
-    const scale = 1; // 指先と付け根の距離の入力値に対する、出力時に使うスケール比。
+    p5.clear();
     let start: number = 0;
     let end: number = 0;
+
+    /**
+     * handle lost and scene
+     **/
+
+    if (handpose.current.length > 0) {
+      detectedOnce = true;
+    }
+    if (detectedOnce) {
+      lost = updateLost(handpose.current, lost);
+      if (lost.state) {
+        p5.push();
+        p5.translate(p5.width - 100, 100);
+        circleIndicator({
+          p5,
+          ratio: (new Date().getTime() - lost.at) / 2000,
+          text: "きりかわるまで",
+        });
+        p5.pop();
+        if ((new Date().getTime() - lost.at) / 2000 > 1) {
+          setScene((scene + 1) % 3);
+        }
+      }
+    }
+    /**
+     * handle lost and scene
+     **/
 
     if (hands.left.length > 0 || hands.right.length > 0) {
       //右手、左手のうちのどちらかが認識されていた場合
