@@ -9,8 +9,7 @@ import { getPentagonCorner } from "../lib/getPentagonCorner";
 import { getSmoothedValue } from "../lib/calculator/getSmoothedValue";
 import { getSmoothedHandpose } from "../lib/getSmoothedHandpose";
 import { updateHandposeHistory } from "../lib/updateHandposeHistory";
-import { updateLost } from "../lib/updateLost";
-import { updateStyleIndex } from "../lib/updateStyleIndex";
+import { LostManager } from "../lib/LostManagerClass";
 import { circleIndicator } from "../lib/p5/circleIndicator";
 
 type Props = {
@@ -48,11 +47,7 @@ export const InteractionCircle = ({ handpose, scene, setScene }: Props) => {
   ];
   let L1: number = 0;
   let L2: number = 0;
-  let lost: { state: boolean; prev: boolean; at: number } = {
-    state: false,
-    prev: false,
-    at: 0,
-  };
+  let lost = new LostManager();
   let detectedOnce = false;
 
   let distanceListHistory: number[][] = [];
@@ -86,7 +81,7 @@ export const InteractionCircle = ({ handpose, scene, setScene }: Props) => {
       detectedOnce = true;
     }
     if (detectedOnce) {
-      lost = updateLost(handpose.current, lost);
+      lost.update(handpose.current);
       if (lost.state) {
         p5.push();
         p5.translate(p5.width - 100, 100);
